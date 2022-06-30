@@ -1,0 +1,13 @@
+name: shiny_geyser_app_production
+title: Shiny_Geyser_App_Production
+username: bobo
+account: bobo
+server: ec2-3-137-188-170.us-east-2.compute.amazonaws.com
+hostUrl: http://ec2-3-137-188-170.us-east-2.compute.amazonaws.com:3939/__api__
+appId: 4
+bundleId: 4
+url: http://ec2-3-137-188-170.us-east-2.compute.amazonaws.com:3939/content/849d294f-3087-4ae5-aa17-485d28ea83c5/
+when: 1656600936.82096
+lastSyncTime: 1656600936.82197
+asMultiple: FALSE
+asStatic: FALSE

@@ -7,6 +7,8 @@
 #    http://shiny.rstudio.com/
 #
 
+options(repos = c(REPO_NAME = "https://colorado.rstudio.com/rspm/cran/__linux__/focal/2022-06-29"))
+
 library(shiny)
 
 # Define UI for application that draws a histogram

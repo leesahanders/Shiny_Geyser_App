@@ -1,0 +1,13 @@
+name: shiny_geyser_app_production
+title: Shiny_Geyser_App_Production
+username: lisa.anders
+account: lisa.anders
+server: colorado.rstudio.com
+hostUrl: https://colorado.rstudio.com/rsc/__api__
+appId: 11825
+bundleId: 58465
+url: https://colorado.rstudio.com/rsc/content/5d00428f-c75f-4194-81d3-288e04cb4609/
+when: 1656600981.37512
+lastSyncTime: 1656600981.37512
+asMultiple: FALSE
+asStatic: FALSE
