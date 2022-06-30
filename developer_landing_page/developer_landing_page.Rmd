@@ -9,6 +9,8 @@ output:
 ```{r setup, include=FALSE}
 
 # Shiny_Geyser_App_Developer_Landing_Page
+# Git link in corner from: https://joshuacook.netlify.app/post/github-corner-link-to-rmd/ 
+
 library(connectwidgets)
 library(dplyr)
 
