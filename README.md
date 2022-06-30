@@ -14,6 +14,9 @@ Changes are deployed to the testing or sandbox branches on the hosting server (C
 
 Developers landing page is through [ConnectWidgets](https://docs.rstudio.com/how-to-guides/users/pro-tips/widgets/#:~:text=connectwidgets%20is%20an%20RStudio%2Dmaintained,Markdown%20document%20or%20Shiny%20application.) and can be accessed here (upcoming).
 
+Push button deployment, git-backed deployment, and deployment through git actions is integrated and preferred. However publishing manually through the API is included with an example located inside the example [`deploy.R`](./.deploy_app/deploy.R) file. 
+
+
 ## CI / CD
 
 UPCOMING
