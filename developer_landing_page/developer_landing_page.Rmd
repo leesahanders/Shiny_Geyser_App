@@ -1,5 +1,5 @@
 ---
-title: an example developers landing page
+title: Example Developers Landing Page
 output:
   html_document:
     includes:
@@ -8,46 +8,148 @@ output:
 
 ```{r setup, include=FALSE}
 
-# Shiny_Geyser_App_Developer_Landing_Page
-# Git link in corner from: https://joshuacook.netlify.app/post/github-corner-link-to-rmd/ 
+# TODO: 
+# Add tracking for static content (not just shiny)
 
+#### Setup ####
 library(connectwidgets)
 library(dplyr)
+library(lubridate)
+library(connectapi) #remotes::install_github('rstudio/connectapi')
+library(ggplot2)
+library(tidyr)
+library(purrr)
+library(gt)
 
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 Sys.setenv(CONNECT_SERVER="https://colorado.rstudio.com/rsc")
 Sys.setenv(CONNECT_API_KEY="AuiC3DhVa8SoiCBDUjJmWY9kw9dJ7pQA")
 
-client <- connect(
+client <- connectwidgets::connect(
   # server  = Sys.getenv("CONNECT_SERVER"),
   # api_key = Sys.getenv("CONNECT_API_KEY")
   )
 
+#### References ####
+# Git link in corner from: https://joshuacook.netlify.app/post/github-corner-link-to-rmd/
+# Connectwidgets: https://docs.rstudio.com/how-to-guides/users/pro-tips/widgets/ 
+# Connect usage: https://github.com/sol-eng/connect-usage and https://www.youtube.com/watch?v=0iljqY9j64U
+# Connect viz: https://github.com/sol-eng/connect-usage/tree/main/examples/connectViz and https://github.com/RinteRface/connectViz 
+# ggplot2 images inside a table: https://stackoverflow.com/questions/61741440/is-there-a-way-to-embed-a-ggplot-image-dynamically-by-row-like-a-sparkline-usi
+
+#### Content info ####
+# Note this only returns content with vanity url's
 all_content <- client %>%
   content()
 
-sample_content <- all_content %>%
-  filter(grepl("Shiny_Geyser_App",title)) %>%
-  # arrange(desc(updated_time)) %>%
-  #arrange(desc(updated_time)) %>%
-  slice_head(n = 50)
+sample_content <- all_content
+
+#### Usage data ####
+client <- connectapi::connect()
+
+days_lookback = 30
+min_date = as.Date(Sys.Date() - days_lookback)
+max_date = as.Date(Sys.Date())
+
+# Get usage for each Shiny app
+shiny_rsc <- get_usage_shiny(
+  client,
+  from = lubridate::today() - lubridate::ddays(days_lookback),
+  limit = Inf
+  ) %>%
+  filter(!is.na(ended)) %>%
+  mutate(session_duration = ended - started)
+
+# Get the title of each Shiny app
+shiny_rsc_titles <- shiny_rsc %>%
+  count(content_guid) %>%
+  pull(content_guid) %>%
+  purrr::map_dfr(
+    ~tibble(content_guid = .x, content_name = content_title(client, .x))
+    )
+
+#### Wrangle ####
+app_sessions_summary_day <- shiny_rsc %>%
+  inner_join(shiny_rsc_titles, by = "content_guid") %>%
+  #filter(grepl("Shiny_Geyser_App",content_name)) %>%
+  mutate(date = as.Date(started)) %>%
+  group_by(content_name) %>%
+  mutate(#avg_session = mean(session_duration),
+            unique_viewers = n_distinct(user_guid),
+            total_views = n()) %>%
+  ungroup() %>%
+  group_by(content_name, date, unique_viewers, total_views) %>%
+  summarise(#avg_session = mean(session_duration),
+            unique_viewers_date = n_distinct(user_guid),
+            total_views_date = n()) %>%
+  ungroup() %>%
+  merge(sample_content, by.y = "title", by.x = "content_name", all.y = TRUE) %>%
+  filter(!is.na(date)) %>%
+  rename("title" = "content_name") 
+
 ```
 
 ![](https://source.unsplash.com/1920x1080/?forest "A random forest.")
 
 ### Deployments
 
-```{r table}
-sample_content %>%
-  #filter(title == "Shiny_Geyser_App") %>%
+```{r}
+app_sessions_df <- app_sessions_summary_day %>%
+  nest_by(title, owner_username, updated_time, unique_viewers, total_views, guid, url, app_mode) %>%
+  rowwise() %>%
+  mutate(
+    views_by_day = (
+      ggplot(data = data, aes(date, total_views_date)) +
+        geom_bar(stat = "identity", color="gray", fill="white") + 
+        scale_x_date(date_breaks = "1 day", limits = as.Date(c(min_date, max_date))) +
+        theme(legend.position = "none", 
+              panel.background = element_blank(), 
+              text = element_text(size = 20),
+              axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+    ) %>%
+      # ggplot_image(height = 100, aspect_ratio = 1), #height = px(100)
+      ggplot_image(aspect_ratio = 2), #height = px(100)
+    data = NULL
+  ) 
+
+# rsc_table() requires the columns "guid", "url", "title", "app_mode", "owner_username" and "updated_time".
+
+app_sessions_df %>%
   rsc_table()
+  # gt() %>%
+  # fmt_markdown(vars(views_by_day)) 
+
+#### Simpler way to do this if usage tracking isn't needed ####
+# app <- shiny_rsc %>%
+#   inner_join(shiny_rsc_titles, by = "content_guid") %>%
+#   group_by(content_name) %>%
+#   summarise(avg_session = mean(session_duration),
+#             unique_viewers_date = n_distinct(user_guid),
+#             total_views_date = n()) %>%
+#   ungroup() %>%
+#   merge(sample_content, by.y = "title", by.x = "content_name", all.y = TRUE) %>%   rename("title" = "content_name") %>%
+#   filter(grepl("Shiny_Geyser_App",title)) %>%
+#   rsc_table()
+
 ```
 
 
-### UPCOMING
 
-View statistics 
+
+### Deployments
+
+```{r table}
+# apps %>%
+#   rsc_table()
+```
+
+
+
+
+
+
+
 
 
 
