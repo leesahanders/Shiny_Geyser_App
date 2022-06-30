@@ -1,0 +1,53 @@
+---
+title: an example developers landing page
+output:
+  html_document:
+    includes:
+      in_header: header.html
+---
+
+```{r setup, include=FALSE}
+
+# Shiny_Geyser_App_Developer_Landing_Page
+library(connectwidgets)
+library(dplyr)
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+
+Sys.setenv(CONNECT_SERVER="https://colorado.rstudio.com/rsc")
+Sys.setenv(CONNECT_API_KEY="AuiC3DhVa8SoiCBDUjJmWY9kw9dJ7pQA")
+
+client <- connect(
+  # server  = Sys.getenv("CONNECT_SERVER"),
+  # api_key = Sys.getenv("CONNECT_API_KEY")
+  )
+
+all_content <- client %>%
+  content()
+
+sample_content <- all_content %>%
+  filter(grepl("Shiny_Geyser_App",title)) %>%
+  # arrange(desc(updated_time)) %>%
+  #arrange(desc(updated_time)) %>%
+  slice_head(n = 50)
+```
+
+![](https://source.unsplash.com/1920x1080/?forest "A random forest.")
+
+### Deployments
+
+```{r table}
+sample_content %>%
+  #filter(title == "Shiny_Geyser_App") %>%
+  rsc_table()
+```
+
+
+### UPCOMING
+
+View statistics 
+
+
+
+
+

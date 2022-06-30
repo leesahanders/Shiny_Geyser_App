@@ -14,13 +14,6 @@ rsconnect::writeManifest()
 
 # From here you could decide to use git backed deployment after saving to your git repo
 
-# token = Sys.setenv("token" = )
-# secret = Sys.setenv("secret")
-
-# rsconnect::setAccountInfo(name = "lisa.anders", 
-#                           token = Sys.getenv("token"), 
-#                           secret = Sys.getenv("secret"))
-
 rsconnect::deployApp(
   appDir = getwd(),
   #appFiles = list.files(recursive = TRUE),
