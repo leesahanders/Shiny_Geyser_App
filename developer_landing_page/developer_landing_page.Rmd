@@ -4,14 +4,14 @@ output:
   html_document:
     includes:
       in_header: header.html
+    theme:
+      bootswatch: minty
 ---
 
 ```{r setup, include=FALSE}
-
 # TODO: 
 # Add tracking for static content (not just shiny)
 
-#### Setup ####
 library(connectwidgets)
 library(dplyr)
 library(lubridate)
@@ -22,29 +22,63 @@ library(purrr)
 library(gt)
 
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
+```
 
-Sys.setenv(CONNECT_SERVER="https://colorado.rstudio.com/rsc")
-Sys.setenv(CONNECT_API_KEY="AuiC3DhVa8SoiCBDUjJmWY9kw9dJ7pQA")
+![](https://source.unsplash.com/1920x1080/?forest "A random forest.")
+
+
+## Visualizations {.tabset}
+
+### connectwidgets
+
+```{r}
+library(connectwidgets)
+library(dplyr)
+
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 client <- connectwidgets::connect(
   # server  = Sys.getenv("CONNECT_SERVER"),
   # api_key = Sys.getenv("CONNECT_API_KEY")
   )
 
-#### References ####
-# Git link in corner from: https://joshuacook.netlify.app/post/github-corner-link-to-rmd/
-# Connectwidgets: https://docs.rstudio.com/how-to-guides/users/pro-tips/widgets/ 
-# Connect usage: https://github.com/sol-eng/connect-usage and https://www.youtube.com/watch?v=0iljqY9j64U
-# Connect viz: https://github.com/sol-eng/connect-usage/tree/main/examples/connectViz and https://github.com/RinteRface/connectViz 
-# ggplot2 images inside a table: https://stackoverflow.com/questions/61741440/is-there-a-way-to-embed-a-ggplot-image-dynamically-by-row-like-a-sparkline-usi
-
-#### Content info ####
-# Note this only returns content with vanity url's
 all_content <- client %>%
   content()
 
-sample_content <- all_content
+sample_content <- all_content %>%
+  arrange(desc(updated_time)) 
+```
 
+#### table
+
+```{r table}
+sample_content %>%
+  filter(grepl("Shiny_Geyser_App",title)) %>%
+  rsc_table()
+```
+
+
+#### grid
+
+```{r grid}
+sample_content %>%
+  filter(grepl("Shiny_Geyser_App",title)) %>%
+  rsc_grid()
+```
+
+#### card
+
+```{r card}
+sample_content %>%
+  filter(grepl("Shiny_Geyser_App",title)) %>%
+  #slice(1) %>%
+  rsc_card()
+```
+
+
+### connectapi
+
+```{r}
 #### Usage data ####
 client <- connectapi::connect()
 
@@ -90,38 +124,43 @@ app_sessions_summary_day <- shiny_rsc %>%
 
 ```
 
-![](https://source.unsplash.com/1920x1080/?forest "A random forest.")
 
-### Deployments
 
 ```{r}
+#### Embed ggplots into table ####
+
 app_sessions_df <- app_sessions_summary_day %>%
-  nest_by(title, owner_username, updated_time, unique_viewers, total_views, guid, url, app_mode) %>%
+  # nest_by(title, owner_username, updated_time, unique_viewers, total_views, guid, url, app_mode) %>%
+    nest_by(title, owner_username, updated_time, unique_viewers, total_views) %>%
   rowwise() %>%
   mutate(
     views_by_day = (
       ggplot(data = data, aes(date, total_views_date)) +
-        geom_bar(stat = "identity", color="gray", fill="white") + 
+        geom_bar(stat = "identity", color="black", fill="gray") + 
         scale_x_date(date_breaks = "1 day", limits = as.Date(c(min_date, max_date))) +
         theme(legend.position = "none", 
               panel.background = element_blank(), 
-              text = element_text(size = 20),
+              #text = element_text(size = 20),
+              axis.title.x = element_blank(),
+              axis.title.y = element_blank(),
               axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
     ) %>%
       # ggplot_image(height = 100, aspect_ratio = 1), #height = px(100)
-      ggplot_image(aspect_ratio = 2), #height = px(100)
+      ggplot_image(aspect_ratio = 2, height = px(200)), #height = px(100)
     data = NULL
   ) 
 
-# rsc_table() requires the columns "guid", "url", "title", "app_mode", "owner_username" and "updated_time".
-
 app_sessions_df %>%
-  rsc_table()
-  # gt() %>%
-  # fmt_markdown(vars(views_by_day)) 
+  gt() %>%
+  fmt_markdown(vars(views_by_day)) 
+```
+
+
+```{r}
+#### Table with additional details 
 
 #### Simpler way to do this if usage tracking isn't needed ####
-# app <- shiny_rsc %>%
+# shiny_rsc %>%
 #   inner_join(shiny_rsc_titles, by = "content_guid") %>%
 #   group_by(content_name) %>%
 #   summarise(avg_session = mean(session_duration),
@@ -131,20 +170,78 @@ app_sessions_df %>%
 #   merge(sample_content, by.y = "title", by.x = "content_name", all.y = TRUE) %>%   rename("title" = "content_name") %>%
 #   filter(grepl("Shiny_Geyser_App",title)) %>%
 #   rsc_table()
+```
+
+### connectviz
+
+```{r}
+library(connectapi) #remotes::install_github("RinteRface/connectViz")
+library(connectViz)
+library(dplyr)
+library(shiny)
+library(shinydashboard)
+rsc_client <- create_rsc_client()
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE)
+```
+
+```{r}
+
+# Get raw data from RSC database
+apps_usage <- rsc_client %>% get_usage_shiny(limit = Inf)
+rsc_content <- rsc_client %>% get_content()
+rsc_users <- rsc_client %>% get_users(limit = Inf)
+publishers <- rsc_users %>% filter(user_role == "publisher") 
+shiny_apps <- rsc_content %>% filter(app_mode == "shiny")
+
+```
+
+#### General metrics
+
+```{r general-metric}
+general_metrics <- list(
+  "Onboarded Users (n)" = nrow(rsc_users),
+  "Publishers (n)" = nrow(publishers),
+  "Deployments (n)" = nrow(rsc_content),
+  "Shiny Apps (n)" = nrow(shiny_apps)
+)
+shiny::fluidRow(
+  align = "center",
+  purrr::map(
+    seq_along(general_metrics),
+    function(i) {
+      
+      shinydashboard::infoBox(
+        value = general_metrics[[i]],
+        title = names(general_metrics)[[i]]
+      )
+    }
+  )
+)
+```
+
+#### Shiny Apps usage
+
+##### Most used apps
+
+```{r}
+apps_ranking <- create_app_ranking(rsc_content, rsc_users, apps_usage)
+create_app_ranking_table(apps_ranking)
+```
+
+
+```{r}
 
 ```
 
 
+## References 
 
-
-### Deployments
-
-```{r table}
-# apps %>%
-#   rsc_table()
-```
-
-
+ - Connectwidgets: https://docs.rstudio.com/how-to-guides/users/pro-tips/widgets/ and https://rstudio.github.io/connectwidgets/ 
+ - Connect usage: https://github.com/sol-eng/connect-usage and https://www.youtube.com/watch?v=0iljqY9j64U
+ - Connect viz: https://github.com/sol-eng/connect-usage/tree/main/examples/connectViz and https://github.com/RinteRface/connectViz 
+ - connect analytics: https://github.com/tbradley1013/connectAnalytics
+ - ggplot2 images inside a table: https://stackoverflow.com/questions/61741440/is-there-a-way-to-embed-a-ggplot-image-dynamically-by-row-like-a-sparkline-usi
+ - Git link in corner from: https://joshuacook.netlify.app/post/github-corner-link-to-rmd/
 
 
 
